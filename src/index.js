@@ -1,29 +1,30 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const path = require("path"); // Import path module
+const path = require("path");
 const app = express();
-const collection = require("./mongo");
+const router = require("../routes/router");
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // To handle form data
+app.use(express.urlencoded({ extended: true }));
 
-// Serve static files (like CSS) from the public folder
+// Serve static files (CSS)
 app.use(express.static(path.join(__dirname, "../public")));
 
-// Serve the signup.html form from the "template" folder
+// Serve HTML files
 app.get("/signup", (req, res) => {
-  res.sendFile(path.join(__dirname, "../template/signup.html")); // Adjusted path for signup.html
+  res.sendFile(path.join(__dirname, "../template/signup.html"));
 });
 
-// Serve the login.html form from the "template" folder
 app.get("/login", (req, res) => {
-  res.sendFile(path.join(__dirname, "../template/login.html")); // Adjusted path for login.html
+  res.sendFile(path.join(__dirname, "../template/login.html"));
 });
 
-// Serve the home.html form from the "template" folder (home page after login)
 app.get("/home", (req, res) => {
   res.sendFile(path.join(__dirname, "../template/home.html"));
 });
+
+// Use the router for form submissions
+app.use("/", router);
 
 // MongoDB connection
 mongoose
@@ -34,59 +35,6 @@ mongoose
   .catch((err) => {
     console.log("MongoDB connect failed!", err);
   });
-
-// Handle the signup form submission
-app.post("/signup", async (req, res) => {
-  try {
-    const { name, password } = req.body;
-
-    if (!name || !password) return res.send("Invalid data");
-
-    // Check for existing user
-    const existingName = await collection.findOne({ name: name });
-    if (existingName) {
-      return res.send({
-        status: 400,
-        message: "Name already exists",
-      });
-    }
-
-    // Save the user to the database
-    const newUser = new collection({ name, password });
-    await newUser.save();
-
-    // Redirect to login after successful signup
-    res.redirect("/login");
-  } catch (error) {
-    res.status(500).send({
-      message: "Error during signup",
-      error,
-    });
-  }
-});
-
-// Handle the login form submission
-app.post("/login", async (req, res) => {
-  try {
-    const { name, password } = req.body;
-
-    if (!name || !password) return res.send("Invalid login data");
-
-    // Check if the user exists and the password matches
-    const user = await collection.findOne({ name: name });
-    if (!user || user.password !== password) {
-      return res.status(400).send("Invalid username or password");
-    }
-
-    // Redirect to home page after successful login
-    res.redirect("/home");
-  } catch (error) {
-    res.status(500).send({
-      message: "Error during login",
-      error,
-    });
-  }
-});
 
 // Listen on port 3000
 const Port = 3000;
